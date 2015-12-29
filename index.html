@@ -3537,9 +3537,9 @@ Elm.Main.make = function (_elm) {
       return function () {
          switch (action.ctor)
          {case "Start":
-            return $Html.text("Starting...");
+            return "Starting...";
             case "Stop":
-            return $Html.text("Stopping...");}
+            return "Stopping...";}
          _U.badCase($moduleName,
          "between lines 21 and 23");
       }();
@@ -3564,7 +3564,7 @@ Elm.Main.make = function (_elm) {
                    Start)]),
                    _L.fromArray([$Html.text("start")]))]));
    });
-   var model = $Html.text("");
+   var model = "";
    var main = $StartApp$Simple.start({_: {}
                                      ,model: model
                                      ,update: update
