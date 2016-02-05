@@ -7,17 +7,20 @@ import Html.Events exposing (onClick)
 
 -- MODEL
 
-type alias Model = String
+type alias Model = Int
 
+-- INIT
+init : Int
+init = 0
 
 -- UPDATE
 
-type Action = Hello
+type Action = Increment
 
 update : Action -> Model -> Model
 update action model =
   case action of
-    Hello -> "Hey There!"
+    Increment -> model + 1
 
 
 -- VIEW
@@ -25,6 +28,6 @@ update action model =
 view : Signal.Address Action -> Model -> Html
 view address model =
   div []
-    [ div [] [ text model ]
-    , button [ onClick address Hello ] [ text "Press it!" ]
+    [ div [] [ text (toString model) ]
+    , button [ onClick address Increment ] [ text "Start Timer" ]
     ]

@@ -10294,15 +10294,16 @@ Elm.SuperTimer.make = function (_elm) {
    $Result = Elm.Result.make(_elm),
    $Signal = Elm.Signal.make(_elm);
    var _op = {};
-   var update = F2(function (action,model) {    var _p0 = action;return "Hey There!";});
-   var Hello = {ctor: "Hello"};
+   var update = F2(function (action,model) {    var _p0 = action;return model + 1;});
+   var Increment = {ctor: "Increment"};
    var view = F2(function (address,model) {
       return A2($Html.div,
       _U.list([]),
-      _U.list([A2($Html.div,_U.list([]),_U.list([$Html.text(model)]))
-              ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Hello)]),_U.list([$Html.text("Press it!")]))]));
+      _U.list([A2($Html.div,_U.list([]),_U.list([$Html.text($Basics.toString(model))]))
+              ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Increment)]),_U.list([$Html.text("Start Timer")]))]));
    });
-   return _elm.SuperTimer.values = {_op: _op,Hello: Hello,update: update,view: view};
+   var init = 0;
+   return _elm.SuperTimer.values = {_op: _op,init: init,Increment: Increment,update: update,view: view};
 };Elm.Main = Elm.Main || {};
 Elm.Main.make = function (_elm) {
    "use strict";
@@ -10318,6 +10319,6 @@ Elm.Main.make = function (_elm) {
    $StartApp$Simple = Elm.StartApp.Simple.make(_elm),
    $SuperTimer = Elm.SuperTimer.make(_elm);
    var _op = {};
-   var main = $StartApp$Simple.start({model: "",update: $SuperTimer.update,view: $SuperTimer.view});
+   var main = $StartApp$Simple.start({model: $SuperTimer.init,update: $SuperTimer.update,view: $SuperTimer.view});
    return _elm.Main.values = {_op: _op,main: main};
 };</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Main)</script></body></html>

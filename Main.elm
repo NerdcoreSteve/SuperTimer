@@ -1,11 +1,9 @@
-
-import SuperTimer exposing (update, view)
+import SuperTimer exposing (init, update, view)
 import StartApp.Simple exposing (start)
-
 
 main =
   start
-    { model = ""
+    { model = init
     , update = update
     , view = view
     }
