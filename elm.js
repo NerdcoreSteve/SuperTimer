@@ -10170,7 +10170,7 @@ Elm.SuperTimer.make = function (_elm) {
    var view = function (count) {
       return A2($Html.div,
       _U.list([]),
-      _U.list([A2($Html.div,_U.list([]),_U.list([$Html.text($Basics.toString(count))])),A2($Html.button,_U.list([]),_U.list([$Html.text("Start Counter")]))]));
+      _U.list([A2($Html.div,_U.list([]),_U.list([$Html.text($Basics.toString(count))])),A2($Html.button,_U.list([]),_U.list([$Html.text("Start Timer")]))]));
    };
    var main = A2($Signal.map,view,timer_signal);
    return _elm.SuperTimer.values = {_op: _op,view: view,timer_signal: timer_signal,main: main};
