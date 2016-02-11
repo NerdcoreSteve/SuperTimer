@@ -1,33 +1,19 @@
 module SuperTimer where
 
-import Html exposing (..)
-import Html.Attributes exposing (style)
-import Html.Events exposing (onClick)
+import Html
+import Time
 
 
--- MODEL
-
-type alias Model = Int
-
--- INIT
-init : Int
-init = 0
-
--- UPDATE
-
-type Action = Increment
-
-update : Action -> Model -> Model
-update action model =
-  case action of
-    Increment -> model + 1
+view : Int -> Html.Html
+view count =
+  Html.text (toString count)
 
 
--- VIEW
+countSignal : Signal Int
+countSignal =
+    Signal.foldp (\_ state -> state + 1) 0 (Time.every Time.second)
 
-view : Signal.Address Action -> Model -> Html
-view address model =
-  div []
-    [ div [] [ text (toString model) ]
-    , button [ onClick address Increment ] [ text "Start Timer" ]
-    ]
+
+main : Signal.Signal Html.Html
+main =
+  Signal.map view countSignal
