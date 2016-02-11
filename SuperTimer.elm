@@ -1,19 +1,20 @@
 module SuperTimer where
 
-import Html
+import Html exposing (..)
 import Time
-
 
 view : Int -> Html.Html
 view count =
-  Html.text (toString count)
+    div []
+    [ div [] [ text (toString count) ]
+    , button [] [ text "Start Counter" ]
+    ]
 
-
-countSignal : Signal Int
-countSignal =
+timer_signal : Signal Int
+timer_signal =
     Signal.foldp (\_ state -> state + 1) 0 (Time.every Time.second)
 
 
 main : Signal.Signal Html.Html
 main =
-  Signal.map view countSignal
+    Signal.map view timer_signal

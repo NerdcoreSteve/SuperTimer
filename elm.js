@@ -10166,8 +10166,12 @@ Elm.SuperTimer.make = function (_elm) {
    $Signal = Elm.Signal.make(_elm),
    $Time = Elm.Time.make(_elm);
    var _op = {};
-   var countSignal = A3($Signal.foldp,F2(function (_p0,state) {    return state + 1;}),0,$Time.every($Time.second));
-   var view = function (count) {    return $Html.text($Basics.toString(count));};
-   var main = A2($Signal.map,view,countSignal);
-   return _elm.SuperTimer.values = {_op: _op,view: view,countSignal: countSignal,main: main};
+   var timer_signal = A3($Signal.foldp,F2(function (_p0,state) {    return state + 1;}),0,$Time.every($Time.second));
+   var view = function (count) {
+      return A2($Html.div,
+      _U.list([]),
+      _U.list([A2($Html.div,_U.list([]),_U.list([$Html.text($Basics.toString(count))])),A2($Html.button,_U.list([]),_U.list([$Html.text("Start Counter")]))]));
+   };
+   var main = A2($Signal.map,view,timer_signal);
+   return _elm.SuperTimer.values = {_op: _op,view: view,timer_signal: timer_signal,main: main};
 };
