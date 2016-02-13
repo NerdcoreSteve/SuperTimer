@@ -10474,28 +10474,35 @@ Elm.Main.make = function (_elm) {
    var update = F2(function (action,model) {
       var _p0 = action;
       switch (_p0.ctor)
-      {case "Increment": return model.isRunning && _U.cmp(model.seconds,25) < 0 ? _U.update(model,{seconds: model.seconds + 1}) : model;
-         case "StartPause": return _U.update(model,{isRunning: $Basics.not(model.isRunning)});
-         default: return _U.update(model,{seconds: 0});}
+      {case "Increment": return model.running ? _U.cmp(model.seconds,60) < 0 ? _U.update(model,{seconds: model.seconds + 1}) : _U.cmp(model.minutes,
+           25) < 0 ? _U.update(model,{minutes: model.minutes + 1,seconds: 0}) : _U.update(model,{running: false}) : model;
+         case "StartPause": return _U.update(model,{running: $Basics.not(model.running)});
+         default: return _U.update(model,{seconds: 0,minutes: 0,running: false});}
    });
    var Reset = {ctor: "Reset"};
    var StartPause = {ctor: "StartPause"};
    var view = F2(function (address,model) {
       return A2($Html.div,
       _U.list([]),
-      _U.list([function (_p1) {
-                 return $Html.text($Basics.toString(_p1));
-              }(model.seconds)
-              ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,StartPause)]),_U.list([$Html.text(model.isRunning ? "Pause Timer" : "Start Timer")]))
-              ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Reset)]),_U.list([$Html.text("Reset")]))]));
+      _U.list([A2($Html.div,
+              _U.list([]),
+              _U.list([$Html.text(A2($Basics._op["++"],
+              "time: ",
+              A2($Basics._op["++"],$Basics.toString(model.minutes),A2($Basics._op["++"],":",$Basics.toString(model.seconds)))))]))
+              ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"current block: ",$Basics.toString(model.current_block)))]))
+              ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"break time owed: ",$Basics.toString(model.break_time_owed)))]))
+              ,A2($Html.div,
+              _U.list([]),
+              _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,StartPause)]),_U.list([$Html.text(model.running ? "Pause" : "Start")]))
+                      ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Reset)]),_U.list([$Html.text("Reset")]))]))]));
    });
    var Increment = {ctor: "Increment"};
-   var Model = F2(function (a,b) {    return {seconds: a,isRunning: b};});
-   var init = A2(Model,0,false);
+   var Model = F5(function (a,b,c,d,e) {    return {seconds: a,minutes: b,running: c,current_block: d,break_time_owed: e};});
+   var init = A5(Model,0,0,false,1,0);
    var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
                              ,update: F2(function (address,model) {    return {ctor: "_Tuple2",_0: A2(update,address,model),_1: $Effects.none};})
                              ,view: view
-                             ,inputs: _U.list([A2($Signal.map,function (_p2) {    return Increment;},$Time.every($Time.second))])});
+                             ,inputs: _U.list([A2($Signal.map,function (_p1) {    return Increment;},$Time.every($Time.second))])});
    var main = app.html;
    return _elm.Main.values = {_op: _op
                              ,Model: Model
