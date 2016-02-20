@@ -1,24 +1,10 @@
-{-
-TODO
-get current and break time working
-make start/pause button into work/stop-working button
-break timer instead of owed. It counts down. working increments it.
-keyboard controls
-instructions for user
-always double digit
-style it up
-Pheonix back-end that lets you auth and remembers this state.
-customize block time
-customize break rewards
-figure out how to trello-ize this
-???
--}
 import Html exposing (Html, text, div, button)
 import Html.Events exposing (onClick)
 import Time exposing (every, second)
 import StartApp
 import Effects
 import Signal exposing (Address)
+import Debug
 
 type alias Model = 
     {
@@ -34,18 +20,37 @@ type Action = Increment | StartPause | Reset
 init : Model 
 init = Model 0 0 False 1 0
 
+break_time: Int -> Int
+break_time finished_block =
+    if finished_block == 4 then 15 else 5
+
+next_block: Int -> Int
+next_block current_block =
+    if current_block < 4 then
+        current_block + 1
+    else
+        1
+
 update: Action -> Model -> Model
 update action model =
     case action of 
         Increment -> 
             if model.running then
-                if model.seconds < 60 then
+                if model.seconds < 10 then
                     { model | seconds = model.seconds + 1 }
                 else
-                    if model.minutes < 25 then
+                    if model.seconds < 10 then
                         { model | minutes = model.minutes + 1, seconds = 0 }
                     else
-                        { model | running = False }
+                        {
+                            model |
+                                minutes = 0,
+                                seconds = 0,
+                                current_block = next_block model.current_block,
+                                running = False,
+                                break_time_owed =
+                                    model.break_time_owed + (break_time model.current_block)
+                        }
             else
                 model
         StartPause -> 

@@ -10471,11 +10471,18 @@ Elm.Main.make = function (_elm) {
    $StartApp = Elm.StartApp.make(_elm),
    $Time = Elm.Time.make(_elm);
    var _op = {};
+   var next_block = function (current_block) {    return _U.cmp(current_block,4) < 0 ? current_block + 1 : 1;};
+   var break_time = function (finished_block) {    return _U.eq(finished_block,4) ? finished_block + 15 : finished_block + 5;};
    var update = F2(function (action,model) {
       var _p0 = action;
       switch (_p0.ctor)
-      {case "Increment": return model.running ? _U.cmp(model.seconds,60) < 0 ? _U.update(model,{seconds: model.seconds + 1}) : _U.cmp(model.minutes,
-           25) < 0 ? _U.update(model,{minutes: model.minutes + 1,seconds: 0}) : _U.update(model,{running: false}) : model;
+      {case "Increment": return model.running ? _U.cmp(model.seconds,10) < 0 ? _U.update(model,{seconds: model.seconds + 1}) : _U.cmp(model.seconds,
+           10) < 0 ? _U.update(model,{minutes: model.minutes + 1,seconds: 0}) : _U.update(model,
+           {minutes: 0
+           ,seconds: 0
+           ,current_block: next_block(model.current_block)
+           ,running: false
+           ,break_time_owed: model.break_time_owed + break_time(model.current_block)}) : model;
          case "StartPause": return _U.update(model,{running: $Basics.not(model.running)});
          default: return _U.update(model,{seconds: 0,minutes: 0,running: false});}
    });
@@ -10510,6 +10517,8 @@ Elm.Main.make = function (_elm) {
                              ,StartPause: StartPause
                              ,Reset: Reset
                              ,init: init
+                             ,break_time: break_time
+                             ,next_block: next_block
                              ,update: update
                              ,view: view
                              ,app: app
