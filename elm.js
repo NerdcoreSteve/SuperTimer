@@ -10472,20 +10472,7 @@ Elm.Main.make = function (_elm) {
    $Time = Elm.Time.make(_elm);
    var _op = {};
    var next_block = function (current_block) {    return _U.cmp(current_block,4) < 0 ? current_block + 1 : 1;};
-   var break_time = function (finished_block) {    return _U.eq(finished_block,4) ? finished_block + 15 : finished_block + 5;};
-   var update = F2(function (action,model) {
-      var _p0 = action;
-      switch (_p0.ctor)
-      {case "Increment": return model.running ? _U.cmp(model.seconds,10) < 0 ? _U.update(model,{seconds: model.seconds + 1}) : _U.cmp(model.seconds,
-           10) < 0 ? _U.update(model,{minutes: model.minutes + 1,seconds: 0}) : _U.update(model,
-           {minutes: 0
-           ,seconds: 0
-           ,current_block: next_block(model.current_block)
-           ,running: false
-           ,break_time_owed: model.break_time_owed + break_time(model.current_block)}) : model;
-         case "StartPause": return _U.update(model,{running: $Basics.not(model.running)});
-         default: return _U.update(model,{seconds: 0,minutes: 0,running: false});}
-   });
+   var break_time = function (finished_block) {    return _U.eq(finished_block,4) ? 15 : 5;};
    var Reset = {ctor: "Reset"};
    var StartPause = {ctor: "StartPause"};
    var view = F2(function (address,model) {
@@ -10495,7 +10482,7 @@ Elm.Main.make = function (_elm) {
               _U.list([]),
               _U.list([$Html.text(A2($Basics._op["++"],
               "time: ",
-              A2($Basics._op["++"],$Basics.toString(model.minutes),A2($Basics._op["++"],":",$Basics.toString(model.seconds)))))]))
+              A2($Basics._op["++"],$Basics.toString(model.clock.minutes),A2($Basics._op["++"],":",$Basics.toString(model.clock.seconds)))))]))
               ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"current block: ",$Basics.toString(model.current_block)))]))
               ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"break time owed: ",$Basics.toString(model.break_time_owed)))]))
               ,A2($Html.div,
@@ -10504,14 +10491,40 @@ Elm.Main.make = function (_elm) {
                       ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Reset)]),_U.list([$Html.text("Reset")]))]))]));
    });
    var Increment = {ctor: "Increment"};
-   var Model = F5(function (a,b,c,d,e) {    return {seconds: a,minutes: b,running: c,current_block: d,break_time_owed: e};});
-   var init = A5(Model,0,0,false,1,0);
+   var Model = F4(function (a,b,c,d) {    return {clock: a,running: b,current_block: c,break_time_owed: d};});
+   var Backward = {ctor: "Backward"};
+   var Forward = {ctor: "Forward"};
+   var Clock = F2(function (a,b) {    return {minutes: a,seconds: b};});
+   var tick = F2(function (clock,direction) {
+      var _p0 = direction;
+      if (_p0.ctor === "Forward") {
+            return _U.cmp(clock.seconds,10) < 0 ? A2(Clock,clock.minutes,clock.seconds + 1) : A2(Clock,clock.minutes + 1,0);
+         } else {
+            return _U.cmp(clock.seconds,0) < 0 ? A2(Clock,clock.minutes,clock.seconds - 1) : A2(Clock,clock.minutes - 1,10);
+         }
+   });
+   var init = A4(Model,A2(Clock,0,0),false,1,0);
+   var update = F2(function (action,model) {
+      var _p1 = action;
+      switch (_p1.ctor)
+      {case "Increment": return model.running ? _U.cmp(model.clock.seconds,10) < 0 ? _U.update(model,{clock: A2(tick,model.clock,Forward)}) : A4(Model,
+           A2(Clock,0,0),
+           false,
+           next_block(model.current_block),
+           model.break_time_owed + break_time(model.current_block)) : model;
+         case "StartPause": return _U.update(model,{running: $Basics.not(model.running)});
+         default: return A4(Model,A2(Clock,0,0),false,model.current_block,model.break_time_owed);}
+   });
    var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
                              ,update: F2(function (address,model) {    return {ctor: "_Tuple2",_0: A2(update,address,model),_1: $Effects.none};})
                              ,view: view
-                             ,inputs: _U.list([A2($Signal.map,function (_p1) {    return Increment;},$Time.every($Time.second))])});
+                             ,inputs: _U.list([A2($Signal.map,function (_p2) {    return Increment;},$Time.every($Time.second))])});
    var main = app.html;
    return _elm.Main.values = {_op: _op
+                             ,Clock: Clock
+                             ,Forward: Forward
+                             ,Backward: Backward
+                             ,tick: tick
                              ,Model: Model
                              ,Increment: Increment
                              ,StartPause: StartPause

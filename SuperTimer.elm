@@ -6,10 +6,31 @@ import Effects
 import Signal exposing (Address)
 import Debug
 
+type alias Clock =
+    {
+        minutes : Int,
+        seconds : Int
+    }
+
+type TickDirection = Forward | Backward
+
+tick: Clock -> TickDirection -> Clock
+tick clock direction =
+    case direction of
+        Forward ->
+            if clock.seconds < 10 then
+                Clock clock.minutes (clock.seconds + 1)
+            else
+                Clock (clock.minutes + 1) 0
+        Backward ->
+            if clock.seconds < 0 then
+                Clock clock.minutes (clock.seconds - 1)
+            else
+                Clock (clock.minutes - 1) 10
+
 type alias Model = 
     {
-        seconds : Int,
-        minutes : Int,
+        clock: Clock,
         running : Bool,
         current_block: Int,
         break_time_owed: Int
@@ -18,7 +39,7 @@ type alias Model =
 type Action = Increment | StartPause | Reset
 
 init : Model 
-init = Model 0 0 False 1 0
+init = Model (Clock 0 0) False 1 0
 
 break_time: Int -> Int
 break_time finished_block =
@@ -36,35 +57,37 @@ update action model =
     case action of 
         Increment -> 
             if model.running then
-                if model.seconds < 10 then
-                    { model | seconds = model.seconds + 1 }
+                if model.clock.seconds < 10 then
+                    { model | clock = (tick model.clock Forward)}
                 else
-                    if model.seconds < 10 then
-                        { model | minutes = model.minutes + 1, seconds = 0 }
-                    else
-                        {
-                            model |
-                                minutes = 0,
-                                seconds = 0,
-                                current_block = next_block model.current_block,
-                                running = False,
-                                break_time_owed =
-                                    model.break_time_owed + (break_time model.current_block)
-                        }
+                    Model
+                        (Clock 0 0)
+                        False
+                        (next_block model.current_block)
+                        (model.break_time_owed + (break_time model.current_block))
             else
                 model
         StartPause -> 
             { model | running = not model.running }
         Reset -> 
-            { model | seconds = 0, minutes = 0, running = False }
-
+            Model (Clock 0 0) False model.current_block model.break_time_owed
 
 view : Address Action -> Model -> Html
 view address model =
     div 
         []
         [
-            div [] [text ("time: " ++ (toString model.minutes) ++ ":" ++ (toString model.seconds))],
+            div
+                []
+                [
+                    text
+                        (
+                            "time: " ++
+                            (toString model.clock.minutes) ++
+                            ":" ++
+                            (toString model.clock.seconds)
+                        )
+                ],
             div [] [text ("current block: " ++ (toString model.current_block))],
             div [] [text ("break time owed: " ++ (toString model.break_time_owed))],
             div
