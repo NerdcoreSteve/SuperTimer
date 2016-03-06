@@ -10471,10 +10471,13 @@ Elm.Main.make = function (_elm) {
    $StartApp = Elm.StartApp.make(_elm),
    $Time = Elm.Time.make(_elm);
    var _op = {};
+   var format_double_digit = function (number) {
+      return _U.cmp(number,10) < 0 ? A2($Basics._op["++"],"0",$Basics.toString(number)) : $Basics.toString(number);
+   };
    var clock_to_string = function (clock) {
       return A2($Basics._op["++"],
-      $Basics.toString(clock.hours),
-      A2($Basics._op["++"],":",A2($Basics._op["++"],$Basics.toString(clock.minutes),A2($Basics._op["++"],":",$Basics.toString(clock.seconds)))));
+      format_double_digit(clock.hours),
+      A2($Basics._op["++"],":",A2($Basics._op["++"],format_double_digit(clock.minutes),A2($Basics._op["++"],":",format_double_digit(clock.seconds)))));
    };
    var next_block = function (current_block) {    return _U.cmp(current_block,4) < 0 ? current_block + 1 : 1;};
    var add_break_time = F2(function (clock,finished_block) {
@@ -10527,6 +10530,7 @@ Elm.Main.make = function (_elm) {
                              ,add_break_time: add_break_time
                              ,next_block: next_block
                              ,update: update
+                             ,format_double_digit: format_double_digit
                              ,clock_to_string: clock_to_string
                              ,view: view
                              ,app: app

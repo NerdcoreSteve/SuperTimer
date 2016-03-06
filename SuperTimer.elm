@@ -71,12 +71,16 @@ update action model =
         Reset -> 
             Model (Clock 0 0 0) (Clock 0 0 0) False model.current_block
 
+format_double_digit: Int -> String
+format_double_digit number =
+    if number < 10 then "0" ++ (toString number) else toString number
+
 clock_to_string clock =
-    (toString clock.hours) ++
+    (format_double_digit clock.hours) ++
     ":" ++
-    (toString clock.minutes) ++
+    (format_double_digit clock.minutes) ++
     ":" ++
-    (toString clock.seconds)
+    (format_double_digit clock.seconds)
 
 view : Address Action -> Model -> Html
 view address model =
