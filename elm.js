@@ -10471,6 +10471,9 @@ Elm.Main.make = function (_elm) {
    $StartApp = Elm.StartApp.make(_elm),
    $Time = Elm.Time.make(_elm);
    var _op = {};
+   var clock_to_string = function (clock) {
+      return A2($Basics._op["++"],$Basics.toString(clock.minutes),A2($Basics._op["++"],":",$Basics.toString(clock.seconds)));
+   };
    var next_block = function (current_block) {    return _U.cmp(current_block,4) < 0 ? current_block + 1 : 1;};
    var break_time = function (finished_block) {    return _U.eq(finished_block,4) ? 15 : 5;};
    var Reset = {ctor: "Reset"};
@@ -10478,11 +10481,8 @@ Elm.Main.make = function (_elm) {
    var view = F2(function (address,model) {
       return A2($Html.div,
       _U.list([]),
-      _U.list([A2($Html.div,
-              _U.list([]),
-              _U.list([$Html.text(A2($Basics._op["++"],
-              "time: ",
-              A2($Basics._op["++"],$Basics.toString(model.clock.minutes),A2($Basics._op["++"],":",$Basics.toString(model.clock.seconds)))))]))
+      _U.list([A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"work clock: ",clock_to_string(model.work_clock)))]))
+              ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"break clock: ",clock_to_string(model.break_clock)))]))
               ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"current block: ",$Basics.toString(model.current_block)))]))
               ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"break time owed: ",$Basics.toString(model.break_time_owed)))]))
               ,A2($Html.div,
@@ -10491,39 +10491,29 @@ Elm.Main.make = function (_elm) {
                       ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Reset)]),_U.list([$Html.text("Reset")]))]))]));
    });
    var Increment = {ctor: "Increment"};
-   var Model = F4(function (a,b,c,d) {    return {clock: a,running: b,current_block: c,break_time_owed: d};});
-   var Backward = {ctor: "Backward"};
-   var Forward = {ctor: "Forward"};
+   var Model = F5(function (a,b,c,d,e) {    return {work_clock: a,break_clock: b,running: c,current_block: d,break_time_owed: e};});
    var Clock = F2(function (a,b) {    return {minutes: a,seconds: b};});
-   var tick = F2(function (clock,direction) {
-      var _p0 = direction;
-      if (_p0.ctor === "Forward") {
-            return _U.cmp(clock.seconds,10) < 0 ? A2(Clock,clock.minutes,clock.seconds + 1) : A2(Clock,clock.minutes + 1,0);
-         } else {
-            return _U.cmp(clock.seconds,0) < 0 ? A2(Clock,clock.minutes,clock.seconds - 1) : A2(Clock,clock.minutes - 1,10);
-         }
-   });
-   var init = A4(Model,A2(Clock,0,0),false,1,0);
+   var tick = function (clock) {    return _U.cmp(clock.seconds,10) < 0 ? A2(Clock,clock.minutes,clock.seconds + 1) : A2(Clock,clock.minutes + 1,0);};
+   var init = A5(Model,A2(Clock,0,0),A2(Clock,0,0),false,1,0);
    var update = F2(function (action,model) {
-      var _p1 = action;
-      switch (_p1.ctor)
-      {case "Increment": return model.running ? _U.cmp(model.clock.seconds,10) < 0 ? _U.update(model,{clock: A2(tick,model.clock,Forward)}) : A4(Model,
+      var _p0 = action;
+      switch (_p0.ctor)
+      {case "Increment": return model.running ? _U.cmp(model.work_clock.seconds,10) < 0 ? _U.update(model,{work_clock: tick(model.work_clock)}) : A5(Model,
+           A2(Clock,0,0),
            A2(Clock,0,0),
            false,
            next_block(model.current_block),
            model.break_time_owed + break_time(model.current_block)) : model;
          case "StartPause": return _U.update(model,{running: $Basics.not(model.running)});
-         default: return A4(Model,A2(Clock,0,0),false,model.current_block,model.break_time_owed);}
+         default: return A5(Model,A2(Clock,0,0),A2(Clock,0,0),false,model.current_block,model.break_time_owed);}
    });
    var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
                              ,update: F2(function (address,model) {    return {ctor: "_Tuple2",_0: A2(update,address,model),_1: $Effects.none};})
                              ,view: view
-                             ,inputs: _U.list([A2($Signal.map,function (_p2) {    return Increment;},$Time.every($Time.second))])});
+                             ,inputs: _U.list([A2($Signal.map,function (_p1) {    return Increment;},$Time.every($Time.second))])});
    var main = app.html;
    return _elm.Main.values = {_op: _op
                              ,Clock: Clock
-                             ,Forward: Forward
-                             ,Backward: Backward
                              ,tick: tick
                              ,Model: Model
                              ,Increment: Increment
@@ -10533,6 +10523,7 @@ Elm.Main.make = function (_elm) {
                              ,break_time: break_time
                              ,next_block: next_block
                              ,update: update
+                             ,clock_to_string: clock_to_string
                              ,view: view
                              ,app: app
                              ,main: main};

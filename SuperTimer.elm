@@ -12,25 +12,17 @@ type alias Clock =
         seconds : Int
     }
 
-type TickDirection = Forward | Backward
-
-tick: Clock -> TickDirection -> Clock
-tick clock direction =
-    case direction of
-        Forward ->
-            if clock.seconds < 10 then
-                Clock clock.minutes (clock.seconds + 1)
-            else
-                Clock (clock.minutes + 1) 0
-        Backward ->
-            if clock.seconds < 0 then
-                Clock clock.minutes (clock.seconds - 1)
-            else
-                Clock (clock.minutes - 1) 10
+tick: Clock -> Clock
+tick clock =
+    if clock.seconds < 10 then
+        Clock clock.minutes (clock.seconds + 1)
+    else
+        Clock (clock.minutes + 1) 0
 
 type alias Model = 
     {
-        clock: Clock,
+        work_clock: Clock,
+        break_clock: Clock,
         running : Bool,
         current_block: Int,
         break_time_owed: Int
@@ -39,7 +31,7 @@ type alias Model =
 type Action = Increment | StartPause | Reset
 
 init : Model 
-init = Model (Clock 0 0) False 1 0
+init = Model (Clock 0 0) (Clock 0 0) False 1 0
 
 break_time: Int -> Int
 break_time finished_block =
@@ -57,10 +49,11 @@ update action model =
     case action of 
         Increment -> 
             if model.running then
-                if model.clock.seconds < 10 then
-                    { model | clock = (tick model.clock Forward)}
+                if model.work_clock.seconds < 10 then
+                    { model | work_clock = (tick model.work_clock)}
                 else
                     Model
+                        (Clock 0 0)
                         (Clock 0 0)
                         False
                         (next_block model.current_block)
@@ -70,24 +63,20 @@ update action model =
         StartPause -> 
             { model | running = not model.running }
         Reset -> 
-            Model (Clock 0 0) False model.current_block model.break_time_owed
+            Model (Clock 0 0) (Clock 0 0) False model.current_block model.break_time_owed
+
+clock_to_string clock =
+    (toString clock.minutes) ++
+    ":" ++
+    (toString clock.seconds)
 
 view : Address Action -> Model -> Html
 view address model =
     div 
         []
         [
-            div
-                []
-                [
-                    text
-                        (
-                            "time: " ++
-                            (toString model.clock.minutes) ++
-                            ":" ++
-                            (toString model.clock.seconds)
-                        )
-                ],
+            div [] [text ("work clock: " ++ (clock_to_string model.work_clock))],
+            div [] [text ("break clock: " ++ (clock_to_string model.break_clock))],
             div [] [text ("current block: " ++ (toString model.current_block))],
             div [] [text ("break time owed: " ++ (toString model.break_time_owed))],
             div
