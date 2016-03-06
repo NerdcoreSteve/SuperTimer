@@ -23,15 +23,16 @@ tick clock =
 type alias Model = 
     {
         work_clock: Clock,
+        working : Bool,
         break_clock: Clock,
-        running : Bool,
+        breaking : Bool,
         current_block: Int
     }
 
-type Action = Increment | StartPause | Reset
+type Action = Increment | StartPause | Reset | Break
 
 init : Model 
-init = Model (Clock 0 0 0) (Clock 0 0 0) False 1
+init = Model (Clock 0 0 0) False (Clock 0 0 0) False 1
 
 break_time: Int -> Int
 break_time finished_block =
@@ -55,21 +56,24 @@ update: Action -> Model -> Model
 update action model =
     case action of 
         Increment -> 
-            if model.running then
+            if model.working then
                 if model.work_clock.seconds < 10 then
                     { model | work_clock = (tick model.work_clock)}
                 else
                     Model
                         (Clock 0 0 0)
+                        False
                         (add_break_time model.break_clock model.current_block)
                         False
                         (next_block model.current_block)
             else
                 model
         StartPause -> 
-            { model | running = not model.running }
+            { model | working = not model.working }
         Reset -> 
-            Model (Clock 0 0 0) (Clock 0 0 0) False model.current_block
+            Model (Clock 0 0 0) False (Clock 0 0 0) False model.current_block
+        Break -> 
+            { model | breaking = not model.breaking }
 
 format_double_digit: Int -> String
 format_double_digit number =
@@ -95,10 +99,13 @@ view address model =
                 [
                     button
                         [ onClick address StartPause ]
-                        [ text <| if model.running then "Pause" else "Start" ],
+                        [ text <| if model.working then "Pause" else "Start" ],
                     button 
                         [onClick address Reset ]
-                        [ text "Reset" ]
+                        [ text "Reset" ],
+                    button 
+                        [onClick address Break ]
+                        [ text "Break" ]
                 ]
         ]
 
