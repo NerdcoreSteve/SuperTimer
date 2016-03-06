@@ -10472,9 +10472,14 @@ Elm.Main.make = function (_elm) {
    $Time = Elm.Time.make(_elm);
    var _op = {};
    var clock_to_string = function (clock) {
-      return A2($Basics._op["++"],$Basics.toString(clock.minutes),A2($Basics._op["++"],":",$Basics.toString(clock.seconds)));
+      return A2($Basics._op["++"],
+      $Basics.toString(clock.hours),
+      A2($Basics._op["++"],":",A2($Basics._op["++"],$Basics.toString(clock.minutes),A2($Basics._op["++"],":",$Basics.toString(clock.seconds)))));
    };
    var next_block = function (current_block) {    return _U.cmp(current_block,4) < 0 ? current_block + 1 : 1;};
+   var add_break_time = F2(function (clock,finished_block) {
+      return _U.eq(finished_block,4) ? _U.update(clock,{minutes: clock.minutes + 15}) : _U.update(clock,{minutes: clock.minutes + 5});
+   });
    var break_time = function (finished_block) {    return _U.eq(finished_block,4) ? 15 : 5;};
    var Reset = {ctor: "Reset"};
    var StartPause = {ctor: "StartPause"};
@@ -10484,28 +10489,26 @@ Elm.Main.make = function (_elm) {
       _U.list([A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"work clock: ",clock_to_string(model.work_clock)))]))
               ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"break clock: ",clock_to_string(model.break_clock)))]))
               ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"current block: ",$Basics.toString(model.current_block)))]))
-              ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"break time owed: ",$Basics.toString(model.break_time_owed)))]))
               ,A2($Html.div,
               _U.list([]),
               _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,StartPause)]),_U.list([$Html.text(model.running ? "Pause" : "Start")]))
                       ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Reset)]),_U.list([$Html.text("Reset")]))]))]));
    });
    var Increment = {ctor: "Increment"};
-   var Model = F5(function (a,b,c,d,e) {    return {work_clock: a,break_clock: b,running: c,current_block: d,break_time_owed: e};});
-   var Clock = F2(function (a,b) {    return {minutes: a,seconds: b};});
-   var tick = function (clock) {    return _U.cmp(clock.seconds,10) < 0 ? A2(Clock,clock.minutes,clock.seconds + 1) : A2(Clock,clock.minutes + 1,0);};
-   var init = A5(Model,A2(Clock,0,0),A2(Clock,0,0),false,1,0);
+   var Model = F4(function (a,b,c,d) {    return {work_clock: a,break_clock: b,running: c,current_block: d};});
+   var Clock = F3(function (a,b,c) {    return {hours: a,minutes: b,seconds: c};});
+   var tick = function (clock) {    return _U.cmp(clock.seconds,10) < 0 ? A3(Clock,0,clock.minutes,clock.seconds + 1) : A3(Clock,0,clock.minutes + 1,0);};
+   var init = A4(Model,A3(Clock,0,0,0),A3(Clock,0,0,0),false,1);
    var update = F2(function (action,model) {
       var _p0 = action;
       switch (_p0.ctor)
-      {case "Increment": return model.running ? _U.cmp(model.work_clock.seconds,10) < 0 ? _U.update(model,{work_clock: tick(model.work_clock)}) : A5(Model,
-           A2(Clock,0,0),
-           A2(Clock,0,0),
+      {case "Increment": return model.running ? _U.cmp(model.work_clock.seconds,10) < 0 ? _U.update(model,{work_clock: tick(model.work_clock)}) : A4(Model,
+           A3(Clock,0,0,0),
+           A2(add_break_time,model.break_clock,model.current_block),
            false,
-           next_block(model.current_block),
-           model.break_time_owed + break_time(model.current_block)) : model;
+           next_block(model.current_block)) : model;
          case "StartPause": return _U.update(model,{running: $Basics.not(model.running)});
-         default: return A5(Model,A2(Clock,0,0),A2(Clock,0,0),false,model.current_block,model.break_time_owed);}
+         default: return A4(Model,A3(Clock,0,0,0),A3(Clock,0,0,0),false,model.current_block);}
    });
    var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
                              ,update: F2(function (address,model) {    return {ctor: "_Tuple2",_0: A2(update,address,model),_1: $Effects.none};})
@@ -10521,6 +10524,7 @@ Elm.Main.make = function (_elm) {
                              ,Reset: Reset
                              ,init: init
                              ,break_time: break_time
+                             ,add_break_time: add_break_time
                              ,next_block: next_block
                              ,update: update
                              ,clock_to_string: clock_to_string
