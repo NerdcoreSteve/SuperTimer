@@ -10479,14 +10479,12 @@ Elm.Main.make = function (_elm) {
       format_double_digit(clock.hours),
       A2($Basics._op["++"],":",A2($Basics._op["++"],format_double_digit(clock.minutes),A2($Basics._op["++"],":",format_double_digit(clock.seconds)))));
    };
-   var next_block = function (current_block) {    return _U.cmp(current_block,4) < 0 ? current_block + 1 : 1;};
    var add_break_time = F2(function (clock,finished_block) {
       return _U.eq(finished_block,4) ? _U.update(clock,{minutes: clock.minutes + 15}) : _U.update(clock,{minutes: clock.minutes + 5});
    });
    var break_time = function (finished_block) {    return _U.eq(finished_block,4) ? 15 : 5;};
    var Break = {ctor: "Break"};
-   var Reset = {ctor: "Reset"};
-   var StartPause = {ctor: "StartPause"};
+   var Work = {ctor: "Work"};
    var view = F2(function (address,model) {
       return A2($Html.div,
       _U.list([]),
@@ -10495,40 +10493,66 @@ Elm.Main.make = function (_elm) {
               ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"current block: ",$Basics.toString(model.current_block)))]))
               ,A2($Html.div,
               _U.list([]),
-              _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,StartPause)]),_U.list([$Html.text(model.working ? "Pause" : "Start")]))
-                      ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Reset)]),_U.list([$Html.text("Reset")]))
-                      ,A2($Html.button,_U.list([A2($Html$Events.onClick,address,Break)]),_U.list([$Html.text("Break")]))]))]));
+              _U.list([A2($Html.button,_U.list([A2($Html$Events.onClick,address,Work)]),_U.list([$Html.text(model.working ? "Pause Work" : "Start Work")]))
+                      ,A2($Html.button,
+                      _U.list([A2($Html$Events.onClick,address,Break)]),
+                      _U.list([$Html.text(model.breaking ? "Pause Break" : "Start Break")]))]))]));
    });
    var Increment = {ctor: "Increment"};
    var Model = F5(function (a,b,c,d,e) {    return {work_clock: a,working: b,break_clock: c,breaking: d,current_block: e};});
+   var Backward = {ctor: "Backward"};
+   var Forward = {ctor: "Forward"};
+   var number_of_blocks_till_longer_break = 4;
+   var next_block = function (current_block) {    return _U.cmp(current_block,number_of_blocks_till_longer_break) < 0 ? current_block + 1 : 1;};
+   var minutes_in_longer_break_block = 4;
+   var minutes_in_break_block = 2;
+   var minutes_in_work_block = 5;
+   var minutes_in_hours = 6;
+   var seconds_in_minute = 3;
    var Clock = F3(function (a,b,c) {    return {hours: a,minutes: b,seconds: c};});
-   var tick = function (clock) {    return _U.cmp(clock.seconds,10) < 0 ? A3(Clock,0,clock.minutes,clock.seconds + 1) : A3(Clock,0,clock.minutes + 1,0);};
+   var tick = F2(function (clock,direction) {
+      var _p0 = direction;
+      if (_p0.ctor === "Forward") {
+            return _U.cmp(clock.seconds,seconds_in_minute) < 0 ? A3(Clock,0,clock.minutes,clock.seconds + 1) : A3(Clock,0,clock.minutes + 1,0);
+         } else {
+            return _U.cmp(clock.seconds,0) > 0 ? _U.update(clock,{seconds: clock.seconds - 1}) : _U.cmp(clock.minutes,0) > 0 ? _U.update(clock,
+            {minutes: clock.minutes - 1,seconds: seconds_in_minute}) : clock;
+         }
+   });
    var init = A5(Model,A3(Clock,0,0,0),false,A3(Clock,0,0,0),false,1);
    var update = F2(function (action,model) {
-      var _p0 = action;
-      switch (_p0.ctor)
-      {case "Increment": return model.working ? _U.cmp(model.work_clock.seconds,10) < 0 ? _U.update(model,{work_clock: tick(model.work_clock)}) : A5(Model,
+      var _p1 = action;
+      switch (_p1.ctor)
+      {case "Increment": return model.working ? _U.cmp(model.work_clock.minutes,minutes_in_work_block) < 0 ? _U.update(model,
+           {work_clock: A2(tick,model.work_clock,Forward)}) : A5(Model,
            A3(Clock,0,0,0),
            false,
            A2(add_break_time,model.break_clock,model.current_block),
            false,
-           next_block(model.current_block)) : model;
-         case "StartPause": return _U.update(model,{working: $Basics.not(model.working)});
-         case "Reset": return A5(Model,A3(Clock,0,0,0),false,A3(Clock,0,0,0),false,model.current_block);
-         default: return _U.update(model,{breaking: $Basics.not(model.breaking)});}
+           next_block(model.current_block)) : model.breaking ? _U.cmp(model.break_clock.minutes,0) > 0 || _U.cmp(model.break_clock.seconds,
+           0) > 0 ? _U.update(model,{break_clock: A2(tick,model.break_clock,Backward)}) : _U.update(model,{breaking: false}) : model;
+         case "Work": return _U.update(model,{working: $Basics.not(model.working),breaking: false});
+         default: return _U.update(model,{breaking: $Basics.not(model.breaking),working: false});}
    });
    var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
                              ,update: F2(function (address,model) {    return {ctor: "_Tuple2",_0: A2(update,address,model),_1: $Effects.none};})
                              ,view: view
-                             ,inputs: _U.list([A2($Signal.map,function (_p1) {    return Increment;},$Time.every($Time.second))])});
+                             ,inputs: _U.list([A2($Signal.map,function (_p2) {    return Increment;},$Time.every($Time.second))])});
    var main = app.html;
    return _elm.Main.values = {_op: _op
                              ,Clock: Clock
+                             ,seconds_in_minute: seconds_in_minute
+                             ,minutes_in_hours: minutes_in_hours
+                             ,minutes_in_work_block: minutes_in_work_block
+                             ,minutes_in_break_block: minutes_in_break_block
+                             ,minutes_in_longer_break_block: minutes_in_longer_break_block
+                             ,number_of_blocks_till_longer_break: number_of_blocks_till_longer_break
+                             ,Forward: Forward
+                             ,Backward: Backward
                              ,tick: tick
                              ,Model: Model
                              ,Increment: Increment
-                             ,StartPause: StartPause
-                             ,Reset: Reset
+                             ,Work: Work
                              ,Break: Break
                              ,init: init
                              ,break_time: break_time
