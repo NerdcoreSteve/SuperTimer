@@ -6,11 +6,14 @@ import Effects
 import Signal exposing (Address)
 import Debug
 
+type TimeBalance = Negative | Positive
+
 type alias Clock =
     {
         hours : Int,
         minutes : Int,
-        seconds : Int
+        seconds : Int,
+        time_balance : TimeBalance
     }
 
 seconds_in_minute = 3
@@ -27,17 +30,16 @@ tick clock direction =
     case direction of 
         Forward ->
             if clock.seconds < seconds_in_minute then
-                Clock 0 clock.minutes (clock.seconds + 1)
+                Clock 0 clock.minutes (clock.seconds + 1) Positive
             else
-                Clock 0 (clock.minutes + 1) 0
+                Clock 0 (clock.minutes + 1) 0 Positive
         Backward ->
             if clock.seconds > 0 then
                 {clock | seconds = clock.seconds - 1}
-            else
-                if clock.minutes > 0 then
+            else if clock.minutes > 0 then
                     {clock | minutes = clock.minutes - 1, seconds = seconds_in_minute}
-                else
-                    clock
+            else
+                clock
 
 type alias Model = 
     {
@@ -51,7 +53,7 @@ type alias Model =
 type Action = Increment | Work | Break
 
 init : Model 
-init = Model (Clock 0 0 0) False (Clock 0 0 0) False 1
+init = Model (Clock 0 0 0 Positive) False (Clock 0 0 0 Positive) False 1
 
 break_time: Int -> Int
 break_time finished_block =
@@ -80,7 +82,7 @@ update action model =
                     { model | work_clock = (tick model.work_clock Forward)}
                 else
                     Model
-                        (Clock 0 0 0)
+                        (Clock 0 0 0 Positive)
                         False
                         (add_break_time model.break_clock model.current_block)
                         False
@@ -101,20 +103,43 @@ format_double_digit: Int -> String
 format_double_digit number =
     if number < 10 then "0" ++ (toString number) else toString number
 
-clock_to_string clock =
+type alias ClockDisplayOptions =
+    {
+        show_balance : Bool
+    }
+
+default_clock_display_options = ClockDisplayOptions False
+
+clock_display_balance: Clock -> ClockDisplayOptions -> String
+clock_display_balance clock clock_display_options =
+    if clock_display_options.show_balance then
+        case clock.time_balance of
+            Negative ->
+                "- "
+            Positive ->
+                "+ "
+    else
+        ""
+
+clock_display: Clock -> ClockDisplayOptions -> String
+clock_display clock clock_display_options =
+    (clock_display_balance clock clock_display_options) ++
     (format_double_digit clock.hours) ++
     ":" ++
     (format_double_digit clock.minutes) ++
     ":" ++
     (format_double_digit clock.seconds)
 
+default_clock_display: Clock -> String
+default_clock_display clock = clock_display clock default_clock_display_options
+
 view : Address Action -> Model -> Html
 view address model =
     div 
         []
         [
-            div [] [text ("work clock: " ++ (clock_to_string model.work_clock))],
-            div [] [text ("break clock: " ++ (clock_to_string model.break_clock))],
+            div [] [text ("work clock: " ++ (default_clock_display model.work_clock))],
+            div [] [text ("break clock: " ++ (clock_display model.break_clock {show_balance= True}))],
             div [] [text ("current block: " ++ (toString model.current_block))],
             div
                 []
