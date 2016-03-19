@@ -20,23 +20,31 @@ type alias Clock =
     }
 
 
+move_clock_forward: Clock -> Clock
+move_clock_forward clock =
+    if clock.seconds < clock.seconds_in_minute then
+        { clock | hours = 0, seconds = clock.seconds + 1 }
+    else
+        { clock | hours = 0, minutes = clock.minutes + 1, seconds = 0 }
+
 type Direction = Forward | Backward
 
 tick: Clock -> Direction -> Clock
 tick clock direction =
     case direction of 
         Forward ->
-            if clock.seconds < clock.seconds_in_minute then
-                { clock | hours = 0, seconds = clock.seconds + 1 }
-            else
-                { clock | hours = 0, minutes = clock.minutes + 1, seconds = 0 }
+            move_clock_forward clock
         Backward ->
-            if clock.seconds > 0 then
-                {clock | seconds = clock.seconds - 1}
-            else if clock.minutes > 0 then
-                    {clock | minutes = clock.minutes - 1, seconds = clock.seconds_in_minute}
-            else
-                clock
+            case clock.time_balance of
+                Positive ->
+                    if clock.seconds > 0 then
+                        {clock | seconds = clock.seconds - 1}
+                    else if clock.minutes > 0 then
+                        {clock | minutes = clock.minutes - 1, seconds = clock.seconds_in_minute}
+                    else
+                        { clock | time_balance = Negative, seconds = 1 }
+                Negative ->
+                    move_clock_forward clock
 
 type alias Model = 
     {
@@ -103,10 +111,7 @@ update action model =
                             current_block = next_block model
                         }
                 else if model.breaking then
-                    if model.break_clock.minutes > 0 || model.break_clock.seconds > 0 then
-                        { model | break_clock = (tick model.break_clock Backward)}
-                    else
-                        { model | breaking = False }
+                    { model | break_clock = (tick model.break_clock Backward)}
                 else
                     model
         Work -> 

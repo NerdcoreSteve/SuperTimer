@@ -10523,21 +10523,35 @@ Elm.Main.make = function (_elm) {
              ,minutes_in_longer_break_block: h
              ,number_of_blocks_till_longer_break: i};
    });
+   var Backward = {ctor: "Backward"};
+   var Forward = {ctor: "Forward"};
+   var move_clock_forward = function (clock) {
+      return _U.cmp(clock.seconds,clock.seconds_in_minute) < 0 ? _U.update(clock,{hours: 0,seconds: clock.seconds + 1}) : _U.update(clock,
+      {hours: 0,minutes: clock.minutes + 1,seconds: 0});
+   };
+   var Clock = F7(function (a,b,c,d,e,f,g) {
+      return {hours: a,minutes: b,seconds: c,time_balance: d,show_balance: e,seconds_in_minute: f,minutes_in_hours: g};
+   });
+   var Positive = {ctor: "Positive"};
+   var init = A9(Model,A7(Clock,0,0,0,Positive,false,3,6),false,A7(Clock,0,0,0,Positive,true,3,6),false,1,5,2,4,4);
+   var Negative = {ctor: "Negative"};
    var tick = F2(function (clock,direction) {
       var _p1 = direction;
       if (_p1.ctor === "Forward") {
-            return _U.cmp(clock.seconds,clock.seconds_in_minute) < 0 ? _U.update(clock,{hours: 0,seconds: clock.seconds + 1}) : _U.update(clock,
-            {hours: 0,minutes: clock.minutes + 1,seconds: 0});
+            return move_clock_forward(clock);
          } else {
-            return _U.cmp(clock.seconds,0) > 0 ? _U.update(clock,{seconds: clock.seconds - 1}) : _U.cmp(clock.minutes,0) > 0 ? _U.update(clock,
-            {minutes: clock.minutes - 1,seconds: clock.seconds_in_minute}) : clock;
+            var _p2 = clock.time_balance;
+            if (_p2.ctor === "Positive") {
+                  return _U.cmp(clock.seconds,0) > 0 ? _U.update(clock,{seconds: clock.seconds - 1}) : _U.cmp(clock.minutes,0) > 0 ? _U.update(clock,
+                  {minutes: clock.minutes - 1,seconds: clock.seconds_in_minute}) : _U.update(clock,{time_balance: Negative,seconds: 1});
+               } else {
+                  return move_clock_forward(clock);
+               }
          }
    });
-   var Backward = {ctor: "Backward"};
-   var Forward = {ctor: "Forward"};
    var update = F2(function (action,model) {
-      var _p2 = action;
-      switch (_p2.ctor)
+      var _p3 = action;
+      switch (_p3.ctor)
       {case "Increment": var old_clock = model.work_clock;
            return model.working ? _U.cmp(model.work_clock.minutes,model.minutes_in_work_block) < 0 ? _U.update(model,
            {work_clock: A2(tick,model.work_clock,Forward)}) : _U.update(model,
@@ -10545,26 +10559,20 @@ Elm.Main.make = function (_elm) {
            ,break_clock: A2(add_break_time,model.break_clock,model.current_block)
            ,breaking: false
            ,working: false
-           ,current_block: next_block(model)}) : model.breaking ? _U.cmp(model.break_clock.minutes,0) > 0 || _U.cmp(model.break_clock.seconds,
-           0) > 0 ? _U.update(model,{break_clock: A2(tick,model.break_clock,Backward)}) : _U.update(model,{breaking: false}) : model;
+           ,current_block: next_block(model)}) : model.breaking ? _U.update(model,{break_clock: A2(tick,model.break_clock,Backward)}) : model;
          case "Work": return _U.update(model,{working: $Basics.not(model.working),breaking: false});
          default: return _U.update(model,{breaking: $Basics.not(model.breaking),working: false});}
    });
-   var Clock = F7(function (a,b,c,d,e,f,g) {
-      return {hours: a,minutes: b,seconds: c,time_balance: d,show_balance: e,seconds_in_minute: f,minutes_in_hours: g};
-   });
-   var Positive = {ctor: "Positive"};
-   var init = A9(Model,A7(Clock,0,0,0,Positive,false,3,6),false,A7(Clock,0,0,0,Positive,true,3,6),false,1,5,2,4,4);
    var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
                              ,update: F2(function (address,model) {    return {ctor: "_Tuple2",_0: A2(update,address,model),_1: $Effects.none};})
                              ,view: view
-                             ,inputs: _U.list([A2($Signal.map,function (_p3) {    return Increment;},$Time.every($Time.second))])});
+                             ,inputs: _U.list([A2($Signal.map,function (_p4) {    return Increment;},$Time.every($Time.second))])});
    var main = app.html;
-   var Negative = {ctor: "Negative"};
    return _elm.Main.values = {_op: _op
                              ,Negative: Negative
                              ,Positive: Positive
                              ,Clock: Clock
+                             ,move_clock_forward: move_clock_forward
                              ,Forward: Forward
                              ,Backward: Backward
                              ,tick: tick
