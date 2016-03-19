@@ -10471,8 +10471,8 @@ Elm.Main.make = function (_elm) {
    $StartApp = Elm.StartApp.make(_elm),
    $Time = Elm.Time.make(_elm);
    var _op = {};
-   var clock_display_balance = F2(function (clock,clock_display_options) {
-      if (clock_display_options.show_balance) {
+   var clock_display_balance = function (clock) {
+      if (clock.show_balance) {
             var _p0 = clock.time_balance;
             if (_p0.ctor === "Negative") {
                   return "- ";
@@ -10480,20 +10480,18 @@ Elm.Main.make = function (_elm) {
                   return "+ ";
                }
          } else return "";
-   });
-   var ClockDisplayOptions = function (a) {    return {show_balance: a};};
-   var default_clock_display_options = ClockDisplayOptions(false);
+   };
    var format_double_digit = function (number) {
       return _U.cmp(number,10) < 0 ? A2($Basics._op["++"],"0",$Basics.toString(number)) : $Basics.toString(number);
    };
-   var clock_display = F2(function (clock,clock_display_options) {
+   var clock_display = function (clock) {
       return A2($Basics._op["++"],
-      A2(clock_display_balance,clock,clock_display_options),
+      clock_display_balance(clock),
       A2($Basics._op["++"],
       format_double_digit(clock.hours),
       A2($Basics._op["++"],":",A2($Basics._op["++"],format_double_digit(clock.minutes),A2($Basics._op["++"],":",format_double_digit(clock.seconds))))));
-   });
-   var default_clock_display = function (clock) {    return A2(clock_display,clock,default_clock_display_options);};
+   };
+   var next_block = function (model) {    return _U.cmp(model.current_block,model.number_of_blocks_till_longer_break) < 0 ? model.current_block + 1 : 1;};
    var add_break_time = F2(function (clock,finished_block) {
       return _U.eq(finished_block,4) ? _U.update(clock,{minutes: clock.minutes + 15}) : _U.update(clock,{minutes: clock.minutes + 5});
    });
@@ -10503,8 +10501,8 @@ Elm.Main.make = function (_elm) {
    var view = F2(function (address,model) {
       return A2($Html.div,
       _U.list([]),
-      _U.list([A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"work clock: ",default_clock_display(model.work_clock)))]))
-              ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"break clock: ",A2(clock_display,model.break_clock,{show_balance: true})))]))
+      _U.list([A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"work clock: ",clock_display(model.work_clock)))]))
+              ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"break clock: ",clock_display(model.break_clock)))]))
               ,A2($Html.div,_U.list([]),_U.list([$Html.text(A2($Basics._op["++"],"current block: ",$Basics.toString(model.current_block)))]))
               ,A2($Html.div,
               _U.list([]),
@@ -10514,46 +10512,49 @@ Elm.Main.make = function (_elm) {
                       _U.list([$Html.text(model.breaking ? "Pause Break" : "Start Break")]))]))]));
    });
    var Increment = {ctor: "Increment"};
-   var Model = F5(function (a,b,c,d,e) {    return {work_clock: a,working: b,break_clock: c,breaking: d,current_block: e};});
-   var Backward = {ctor: "Backward"};
-   var Forward = {ctor: "Forward"};
-   var number_of_blocks_till_longer_break = 4;
-   var next_block = function (current_block) {    return _U.cmp(current_block,number_of_blocks_till_longer_break) < 0 ? current_block + 1 : 1;};
-   var minutes_in_longer_break_block = 4;
-   var minutes_in_break_block = 2;
-   var minutes_in_work_block = 5;
-   var minutes_in_hours = 6;
-   var seconds_in_minute = 3;
-   var Clock = F4(function (a,b,c,d) {    return {hours: a,minutes: b,seconds: c,time_balance: d};});
-   var Positive = {ctor: "Positive"};
+   var Model = F9(function (a,b,c,d,e,f,g,h,i) {
+      return {work_clock: a
+             ,working: b
+             ,break_clock: c
+             ,breaking: d
+             ,current_block: e
+             ,minutes_in_work_block: f
+             ,minutes_in_break_block: g
+             ,minutes_in_longer_break_block: h
+             ,number_of_blocks_till_longer_break: i};
+   });
    var tick = F2(function (clock,direction) {
       var _p1 = direction;
       if (_p1.ctor === "Forward") {
-            return _U.cmp(clock.seconds,seconds_in_minute) < 0 ? A4(Clock,0,clock.minutes,clock.seconds + 1,Positive) : A4(Clock,
-            0,
-            clock.minutes + 1,
-            0,
-            Positive);
+            return _U.cmp(clock.seconds,clock.seconds_in_minute) < 0 ? _U.update(clock,{hours: 0,seconds: clock.seconds + 1}) : _U.update(clock,
+            {hours: 0,minutes: clock.minutes + 1,seconds: 0});
          } else {
             return _U.cmp(clock.seconds,0) > 0 ? _U.update(clock,{seconds: clock.seconds - 1}) : _U.cmp(clock.minutes,0) > 0 ? _U.update(clock,
-            {minutes: clock.minutes - 1,seconds: seconds_in_minute}) : clock;
+            {minutes: clock.minutes - 1,seconds: clock.seconds_in_minute}) : clock;
          }
    });
-   var init = A5(Model,A4(Clock,0,0,0,Positive),false,A4(Clock,0,0,0,Positive),false,1);
+   var Backward = {ctor: "Backward"};
+   var Forward = {ctor: "Forward"};
    var update = F2(function (action,model) {
       var _p2 = action;
       switch (_p2.ctor)
-      {case "Increment": return model.working ? _U.cmp(model.work_clock.minutes,minutes_in_work_block) < 0 ? _U.update(model,
-           {work_clock: A2(tick,model.work_clock,Forward)}) : A5(Model,
-           A4(Clock,0,0,0,Positive),
-           false,
-           A2(add_break_time,model.break_clock,model.current_block),
-           false,
-           next_block(model.current_block)) : model.breaking ? _U.cmp(model.break_clock.minutes,0) > 0 || _U.cmp(model.break_clock.seconds,
+      {case "Increment": var old_clock = model.work_clock;
+           return model.working ? _U.cmp(model.work_clock.minutes,model.minutes_in_work_block) < 0 ? _U.update(model,
+           {work_clock: A2(tick,model.work_clock,Forward)}) : _U.update(model,
+           {work_clock: _U.update(old_clock,{hours: 0,minutes: 0,seconds: 0})
+           ,break_clock: A2(add_break_time,model.break_clock,model.current_block)
+           ,breaking: false
+           ,working: false
+           ,current_block: next_block(model)}) : model.breaking ? _U.cmp(model.break_clock.minutes,0) > 0 || _U.cmp(model.break_clock.seconds,
            0) > 0 ? _U.update(model,{break_clock: A2(tick,model.break_clock,Backward)}) : _U.update(model,{breaking: false}) : model;
          case "Work": return _U.update(model,{working: $Basics.not(model.working),breaking: false});
          default: return _U.update(model,{breaking: $Basics.not(model.breaking),working: false});}
    });
+   var Clock = F7(function (a,b,c,d,e,f,g) {
+      return {hours: a,minutes: b,seconds: c,time_balance: d,show_balance: e,seconds_in_minute: f,minutes_in_hours: g};
+   });
+   var Positive = {ctor: "Positive"};
+   var init = A9(Model,A7(Clock,0,0,0,Positive,false,3,6),false,A7(Clock,0,0,0,Positive,true,3,6),false,1,5,2,4,4);
    var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
                              ,update: F2(function (address,model) {    return {ctor: "_Tuple2",_0: A2(update,address,model),_1: $Effects.none};})
                              ,view: view
@@ -10564,12 +10565,6 @@ Elm.Main.make = function (_elm) {
                              ,Negative: Negative
                              ,Positive: Positive
                              ,Clock: Clock
-                             ,seconds_in_minute: seconds_in_minute
-                             ,minutes_in_hours: minutes_in_hours
-                             ,minutes_in_work_block: minutes_in_work_block
-                             ,minutes_in_break_block: minutes_in_break_block
-                             ,minutes_in_longer_break_block: minutes_in_longer_break_block
-                             ,number_of_blocks_till_longer_break: number_of_blocks_till_longer_break
                              ,Forward: Forward
                              ,Backward: Backward
                              ,tick: tick
@@ -10583,11 +10578,8 @@ Elm.Main.make = function (_elm) {
                              ,next_block: next_block
                              ,update: update
                              ,format_double_digit: format_double_digit
-                             ,ClockDisplayOptions: ClockDisplayOptions
-                             ,default_clock_display_options: default_clock_display_options
                              ,clock_display_balance: clock_display_balance
                              ,clock_display: clock_display
-                             ,default_clock_display: default_clock_display
                              ,view: view
                              ,app: app
                              ,main: main};

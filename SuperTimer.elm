@@ -13,15 +13,12 @@ type alias Clock =
         hours : Int,
         minutes : Int,
         seconds : Int,
-        time_balance : TimeBalance
+        time_balance : TimeBalance,
+        show_balance : Bool,
+        seconds_in_minute: Int,
+        minutes_in_hours: Int
     }
 
-seconds_in_minute = 3
-minutes_in_hours = 6
-minutes_in_work_block = 5
-minutes_in_break_block = 2
-minutes_in_longer_break_block = 4
-number_of_blocks_till_longer_break = 4
 
 type Direction = Forward | Backward
 
@@ -29,15 +26,15 @@ tick: Clock -> Direction -> Clock
 tick clock direction =
     case direction of 
         Forward ->
-            if clock.seconds < seconds_in_minute then
-                Clock 0 clock.minutes (clock.seconds + 1) Positive
+            if clock.seconds < clock.seconds_in_minute then
+                { clock | hours = 0, seconds = clock.seconds + 1 }
             else
-                Clock 0 (clock.minutes + 1) 0 Positive
+                { clock | hours = 0, minutes = clock.minutes + 1, seconds = 0 }
         Backward ->
             if clock.seconds > 0 then
                 {clock | seconds = clock.seconds - 1}
             else if clock.minutes > 0 then
-                    {clock | minutes = clock.minutes - 1, seconds = seconds_in_minute}
+                    {clock | minutes = clock.minutes - 1, seconds = clock.seconds_in_minute}
             else
                 clock
 
@@ -47,13 +44,28 @@ type alias Model =
         working : Bool,
         break_clock: Clock,
         breaking : Bool,
-        current_block: Int
+        current_block: Int,
+        minutes_in_work_block: Int,
+        minutes_in_break_block: Int,
+        minutes_in_longer_break_block: Int,
+        number_of_blocks_till_longer_break: Int
     }
 
 type Action = Increment | Work | Break
 
+--Magic numbers, gotta be a better way
 init : Model 
-init = Model (Clock 0 0 0 Positive) False (Clock 0 0 0 Positive) False 1
+init =
+    Model
+        (Clock 0 0 0 Positive False 3 6)
+        False
+        (Clock 0 0 0 Positive True 3 6)
+        False
+        1
+        5
+        2
+        4
+        4
 
 break_time: Int -> Int
 break_time finished_block =
@@ -66,10 +78,10 @@ add_break_time clock finished_block=
     else
         {clock | minutes = clock.minutes + 5}
 
-next_block: Int -> Int
-next_block current_block =
-    if current_block < number_of_blocks_till_longer_break then
-        current_block + 1
+next_block: Model -> Int
+next_block model =
+    if model.current_block < model.number_of_blocks_till_longer_break then
+        model.current_block + 1
     else
         1
 
@@ -77,23 +89,26 @@ update: Action -> Model -> Model
 update action model =
     case action of 
         Increment -> 
-            if model.working then
-                if model.work_clock.minutes < minutes_in_work_block then
-                    { model | work_clock = (tick model.work_clock Forward)}
+            let old_clock = model.work_clock in
+                if model.working then
+                    if model.work_clock.minutes < model.minutes_in_work_block then
+                        { model | work_clock = (tick model.work_clock Forward)}
+                    else
+                        { model | 
+                            work_clock =
+                                { old_clock | hours = 0, minutes = 0, seconds = 0 },
+                            break_clock = add_break_time model.break_clock model.current_block,
+                            breaking = False,
+                            working = False,
+                            current_block = next_block model
+                        }
+                else if model.breaking then
+                    if model.break_clock.minutes > 0 || model.break_clock.seconds > 0 then
+                        { model | break_clock = (tick model.break_clock Backward)}
+                    else
+                        { model | breaking = False }
                 else
-                    Model
-                        (Clock 0 0 0 Positive)
-                        False
-                        (add_break_time model.break_clock model.current_block)
-                        False
-                        (next_block model.current_block)
-            else if model.breaking then
-                if model.break_clock.minutes > 0 || model.break_clock.seconds > 0 then
-                    { model | break_clock = (tick model.break_clock Backward)}
-                else
-                    { model | breaking = False }
-            else
-                model
+                    model
         Work -> 
             { model | working = not model.working, breaking = False }
         Break -> 
@@ -103,16 +118,9 @@ format_double_digit: Int -> String
 format_double_digit number =
     if number < 10 then "0" ++ (toString number) else toString number
 
-type alias ClockDisplayOptions =
-    {
-        show_balance : Bool
-    }
-
-default_clock_display_options = ClockDisplayOptions False
-
-clock_display_balance: Clock -> ClockDisplayOptions -> String
-clock_display_balance clock clock_display_options =
-    if clock_display_options.show_balance then
+clock_display_balance: Clock -> String
+clock_display_balance clock =
+    if clock.show_balance then
         case clock.time_balance of
             Negative ->
                 "- "
@@ -121,25 +129,22 @@ clock_display_balance clock clock_display_options =
     else
         ""
 
-clock_display: Clock -> ClockDisplayOptions -> String
-clock_display clock clock_display_options =
-    (clock_display_balance clock clock_display_options) ++
+clock_display: Clock  -> String
+clock_display clock =
+    (clock_display_balance clock) ++
     (format_double_digit clock.hours) ++
     ":" ++
     (format_double_digit clock.minutes) ++
     ":" ++
     (format_double_digit clock.seconds)
 
-default_clock_display: Clock -> String
-default_clock_display clock = clock_display clock default_clock_display_options
-
 view : Address Action -> Model -> Html
 view address model =
     div 
         []
         [
-            div [] [text ("work clock: " ++ (default_clock_display model.work_clock))],
-            div [] [text ("break clock: " ++ (clock_display model.break_clock {show_balance= True}))],
+            div [] [text ("work clock: " ++ (clock_display model.work_clock))],
+            div [] [text ("break clock: " ++ (clock_display model.break_clock))],
             div [] [text ("current block: " ++ (toString model.current_block))],
             div
                 []
