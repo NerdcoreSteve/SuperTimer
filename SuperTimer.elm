@@ -19,7 +19,6 @@ type alias Clock =
         minutes_in_hours: Int
     }
 
-
 move_clock_forward: Clock -> Clock
 move_clock_forward clock =
     if clock.seconds < clock.seconds_in_minute then
@@ -79,12 +78,20 @@ break_time: Int -> Int
 break_time finished_block =
     if finished_block == 4 then 15 else 5
 
+readjust_clock: Clock -> Clock
+readjust_clock clock = clock
+
 add_break_time: Clock -> Int -> Clock
 add_break_time clock finished_block=
-    if finished_block == 4 then
-        {clock | minutes = clock.minutes + 15}
-    else
-        {clock | minutes = clock.minutes + 5}
+    readjust_clock <|
+        let
+            break_time = if finished_block == 4 then 15 else 5
+        in
+            case clock.time_balance of
+                Positive ->
+                    {clock | minutes = clock.minutes + break_time}
+                Negative ->
+                    {clock | minutes = clock.minutes - break_time}
 
 next_block: Model -> Int
 next_block model =
