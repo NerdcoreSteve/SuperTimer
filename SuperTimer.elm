@@ -16,34 +16,28 @@ type alias Clock =
         time_balance : TimeBalance,
         show_balance : Bool,
         seconds_in_minute: Int,
-        minutes_in_hours: Int
+        minutes_in_hour: Int,
+        max_hours: Int
     }
-
-move_clock_forward: Clock -> Clock
-move_clock_forward clock =
-    if clock.seconds < clock.seconds_in_minute then
-        { clock | hours = 0, seconds = clock.seconds + 1 }
-    else
-        { clock | hours = 0, minutes = clock.minutes + 1, seconds = 0 }
 
 type Direction = Forward | Backward
 
 tick: Clock -> Direction -> Clock
 tick clock direction =
-    case direction of 
-        Forward ->
-            move_clock_forward clock
-        Backward ->
-            case clock.time_balance of
-                Positive ->
-                    if clock.seconds > 0 then
+    readjust_clock <|
+        case direction of 
+            Forward ->
+                case clock.time_balance of
+                    Positive ->
+                        {clock | seconds = clock.seconds + 1}
+                    Negative ->
+                        { clock | seconds = clock.seconds - 1 }
+            Backward ->
+                case clock.time_balance of
+                    Positive ->
                         {clock | seconds = clock.seconds - 1}
-                    else if clock.minutes > 0 then
-                        {clock | minutes = clock.minutes - 1, seconds = clock.seconds_in_minute}
-                    else
-                        { clock | time_balance = Negative, seconds = 1 }
-                Negative ->
-                    move_clock_forward clock
+                    Negative ->
+                        { clock | seconds = clock.seconds + 1 }
 
 type alias Model = 
     {
@@ -64,9 +58,9 @@ type Action = Increment | Work | Break
 init : Model 
 init =
     Model
-        (Clock 0 0 0 Positive False 3 6)
+        (Clock 0 0 0 Positive False 3 6 2)
         False
-        (Clock 0 0 0 Positive True 3 6)
+        (Clock 0 0 0 Positive True 3 6 2)
         False
         1
         5
@@ -78,8 +72,29 @@ break_time: Int -> Int
 break_time finished_block =
     if finished_block == 4 then 15 else 5
 
+--TODO super repetative
 readjust_clock: Clock -> Clock
-readjust_clock clock = clock
+readjust_clock clock =
+    if clock.seconds > clock.seconds_in_minute then
+        { clock |
+            minutes =
+                clock.minutes + (clock.seconds // clock.seconds_in_minute),
+            seconds = clock.seconds % clock.seconds_in_minute - 1 }
+    else if clock.minutes > clock.minutes_in_hour then
+        { clock |
+            hours =
+                clock.minutes + (clock.minutes // clock.minutes_in_hour),
+            minutes = clock.minutes % clock.minutes_in_hour - 1 }
+    else if clock.hours > clock.max_hours then
+        { clock |
+            hours = clock.hours % clock.max_hours - 1 }
+    else if clock.seconds < 0 then
+        { clock |
+            minutes =
+                clock.minutes - (clock.seconds // clock.seconds_in_minute),
+            seconds = clock.seconds % clock.seconds_in_minute - 1 }
+    else
+        clock
 
 add_break_time: Clock -> Int -> Clock
 add_break_time clock finished_block=
