@@ -10492,26 +10492,6 @@ Elm.Main.make = function (_elm) {
       A2($Basics._op["++"],":",A2($Basics._op["++"],format_double_digit(clock.minutes),A2($Basics._op["++"],":",format_double_digit(clock.seconds))))));
    };
    var next_block = function (model) {    return _U.cmp(model.current_block,model.number_of_blocks_till_longer_break) < 0 ? model.current_block + 1 : 1;};
-   var readjust_clock = function (clock) {
-      return _U.cmp(clock.seconds,clock.seconds_in_minute) > 0 ? _U.update(clock,
-      {minutes: clock.minutes + (clock.seconds / clock.seconds_in_minute | 0)
-      ,seconds: A2($Basics._op["%"],clock.seconds,clock.seconds_in_minute) - 1}) : _U.cmp(clock.minutes,clock.minutes_in_hour) > 0 ? _U.update(clock,
-      {hours: clock.minutes + (clock.minutes / clock.minutes_in_hour | 0)
-      ,minutes: A2($Basics._op["%"],clock.minutes,clock.minutes_in_hour) - 1}) : _U.cmp(clock.hours,clock.max_hours) > 0 ? _U.update(clock,
-      {hours: A2($Basics._op["%"],clock.hours,clock.max_hours) - 1}) : _U.cmp(clock.seconds,0) < 0 ? _U.update(clock,
-      {minutes: clock.minutes - (clock.seconds / clock.seconds_in_minute | 0),seconds: A2($Basics._op["%"],clock.seconds,clock.seconds_in_minute) - 1}) : clock;
-   };
-   var add_break_time = F2(function (clock,finished_block) {
-      return readjust_clock(function () {
-         var break_time = _U.eq(finished_block,4) ? 15 : 5;
-         var _p1 = clock.time_balance;
-         if (_p1.ctor === "Positive") {
-               return _U.update(clock,{minutes: clock.minutes + break_time});
-            } else {
-               return _U.update(clock,{minutes: clock.minutes - break_time});
-            }
-      }());
-   });
    var break_time = function (finished_block) {    return _U.eq(finished_block,4) ? 15 : 5;};
    var Break = {ctor: "Break"};
    var Work = {ctor: "Work"};
@@ -10540,19 +10520,52 @@ Elm.Main.make = function (_elm) {
              ,minutes_in_longer_break_block: h
              ,number_of_blocks_till_longer_break: i};
    });
+   var Backward = {ctor: "Backward"};
+   var Forward = {ctor: "Forward"};
+   var Clock = F8(function (a,b,c,d,e,f,g,h) {
+      return {hours: a,minutes: b,seconds: c,time_balance: d,show_balance: e,seconds_in_minute: f,minutes_in_hour: g,max_hours: h};
+   });
+   var Positive = {ctor: "Positive"};
+   var init = A9(Model,A8(Clock,0,0,0,Positive,false,3,6,2),false,A8(Clock,0,0,0,Positive,true,3,6,2),false,1,5,2,4,4);
+   var Negative = {ctor: "Negative"};
+   var readjust_clock = function (clock) {
+      readjust_clock: while (true) if (_U.cmp(clock.seconds,clock.seconds_in_minute) > 0) {
+            var _v1 = _U.update(clock,
+            {minutes: clock.minutes + (clock.seconds / clock.seconds_in_minute | 0),seconds: A2($Basics._op["%"],clock.seconds,clock.seconds_in_minute) - 1});
+            clock = _v1;
+            continue readjust_clock;
+         } else if (_U.cmp(clock.minutes,clock.minutes_in_hour) > 0) {
+               var _v2 = _U.update(clock,
+               {hours: clock.hours + (clock.minutes / clock.minutes_in_hour | 0),minutes: A2($Basics._op["%"],clock.minutes,clock.minutes_in_hour) - 1});
+               clock = _v2;
+               continue readjust_clock;
+            } else if (_U.cmp(clock.hours,clock.max_hours) > 0) {
+                  var _v3 = _U.update(clock,{hours: A2($Basics._op["%"],clock.hours,clock.max_hours) - 1});
+                  clock = _v3;
+                  continue readjust_clock;
+               } else if (_U.cmp(clock.seconds,0) < 0) {
+                     var _v4 = _U.update(clock,{minutes: clock.minutes - 1,seconds: clock.seconds_in_minute - 1});
+                     clock = _v4;
+                     continue readjust_clock;
+                  } else if (_U.cmp(clock.minutes,0) < 0) {
+                        var _v5 = _U.update(clock,{hours: clock.hours - 1,minutes: clock.minutes_in_hour - 1});
+                        clock = _v5;
+                        continue readjust_clock;
+                     } else if (_U.cmp(clock.hours,0) < 0) return _U.update(clock,{hours: 0,minutes: 0,seconds: 1,time_balance: Negative}); else return clock;
+   };
    var tick = F2(function (clock,direction) {
       return readjust_clock(function () {
-         var _p2 = direction;
-         if (_p2.ctor === "Forward") {
-               var _p3 = clock.time_balance;
-               if (_p3.ctor === "Positive") {
+         var _p1 = direction;
+         if (_p1.ctor === "Forward") {
+               var _p2 = clock.time_balance;
+               if (_p2.ctor === "Positive") {
                      return _U.update(clock,{seconds: clock.seconds + 1});
                   } else {
                      return _U.update(clock,{seconds: clock.seconds - 1});
                   }
             } else {
-               var _p4 = clock.time_balance;
-               if (_p4.ctor === "Positive") {
+               var _p3 = clock.time_balance;
+               if (_p3.ctor === "Positive") {
                      return _U.update(clock,{seconds: clock.seconds - 1});
                   } else {
                      return _U.update(clock,{seconds: clock.seconds + 1});
@@ -10560,8 +10573,17 @@ Elm.Main.make = function (_elm) {
             }
       }());
    });
-   var Backward = {ctor: "Backward"};
-   var Forward = {ctor: "Forward"};
+   var add_break_time = F2(function (clock,finished_block) {
+      return readjust_clock(function () {
+         var break_time = _U.eq(finished_block,4) ? 15 : 5;
+         var _p4 = clock.time_balance;
+         if (_p4.ctor === "Positive") {
+               return _U.update(clock,{minutes: clock.minutes + break_time});
+            } else {
+               return _U.update(clock,{minutes: clock.minutes - break_time});
+            }
+      }());
+   });
    var update = F2(function (action,model) {
       var _p5 = action;
       switch (_p5.ctor)
@@ -10576,17 +10598,11 @@ Elm.Main.make = function (_elm) {
          case "Work": return _U.update(model,{working: $Basics.not(model.working),breaking: false});
          default: return _U.update(model,{breaking: $Basics.not(model.breaking),working: false});}
    });
-   var Clock = F8(function (a,b,c,d,e,f,g,h) {
-      return {hours: a,minutes: b,seconds: c,time_balance: d,show_balance: e,seconds_in_minute: f,minutes_in_hour: g,max_hours: h};
-   });
-   var Positive = {ctor: "Positive"};
-   var init = A9(Model,A8(Clock,0,0,0,Positive,false,3,6,2),false,A8(Clock,0,0,0,Positive,true,3,6,2),false,1,5,2,4,4);
    var app = $StartApp.start({init: {ctor: "_Tuple2",_0: init,_1: $Effects.none}
                              ,update: F2(function (address,model) {    return {ctor: "_Tuple2",_0: A2(update,address,model),_1: $Effects.none};})
                              ,view: view
                              ,inputs: _U.list([A2($Signal.map,function (_p6) {    return Increment;},$Time.every($Time.second))])});
    var main = app.html;
-   var Negative = {ctor: "Negative"};
    return _elm.Main.values = {_op: _op
                              ,Negative: Negative
                              ,Positive: Positive
